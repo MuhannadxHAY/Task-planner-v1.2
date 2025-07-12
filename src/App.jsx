@@ -36,70 +36,91 @@ const Input = ({ className = "", ...props }) => (
   />
 );
 
-// Gemini AI Integration
+// Fixed Gemini AI Integration with correct model name
 const useGeminiAI = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState('');
 
   useEffect(() => {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    console.log('API Key check:', apiKey ? 'Present' : 'Missing');
     setIsConnected(!!apiKey);
+    setDebugInfo(apiKey ? `API Key: ${apiKey.substring(0, 10)}...` : 'No API Key');
   }, []);
 
   const sendMessage = async (message) => {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     
     if (!apiKey) {
-      return "Please configure your Gemini API key in environment variables.";
+      return "❌ API Key not found. Please check your environment variables.";
     }
 
     setIsLoading(true);
     
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `You are an AI productivity coach for HAY's Marketing Director. HAY is a neighborhood development company focused on human-centric, community-oriented projects. Current projects include:
+      console.log('Sending request to Gemini API...');
+      
+      const requestBody = {
+        contents: [{
+          parts: [{
+            text: `You are an AI productivity coach for HAY's Marketing Director. HAY is a neighborhood development company focused on human-centric, community-oriented projects. Current projects include:
 
 1. August digital campaign (critical deadline Aug 1-2) - comprehensive digital marketing for neighborhood showcase
-2. Sales office customer journey (critical, 2 weeks) - design complete customer experience
+2. Sales office customer journey (critical, 2 weeks) - design complete customer experience  
 3. November event planning (important, Oct 15) - community engagement event
 
 Context: You understand HAY's "soft developer" positioning, focusing on community building rather than just construction. Provide strategic, actionable advice for marketing and productivity.
 
 User message: ${message}`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
-          }
-        })
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 1024,
+        }
+      };
+
+      console.log('Request body:', requestBody);
+
+      // Fixed: Use correct model name for Gemini 1.5 Flash
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
       });
 
+      console.log('Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        return `❌ API Error (${response.status}): ${errorText.substring(0, 200)}...`;
+      }
+
       const data = await response.json();
+      console.log('API Response:', data);
       
       if (data.candidates && data.candidates[0] && data.candidates[0].content) {
         return data.candidates[0].content.parts[0].text;
+      } else if (data.error) {
+        return `❌ API Error: ${data.error.message}`;
       } else {
-        return "I'm having trouble generating a response right now. Please try again.";
+        return "❌ Unexpected response format from API. Please try again.";
       }
     } catch (error) {
-      console.error('Gemini API Error:', error);
-      return "I'm having trouble connecting to the AI service. Please check your internet connection and try again.";
+      console.error('Network/Fetch Error:', error);
+      return `❌ Network Error: ${error.message}. Please check your internet connection.`;
     } finally {
       setIsLoading(false);
     }
   };
 
-  return { isConnected, isLoading, sendMessage };
+  return { isConnected, isLoading, sendMessage, debugInfo };
 };
 
 // Main App Component
@@ -107,7 +128,8 @@ function App() {
   const [chatMessages, setChatMessages] = useState([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [showChat, setShowChat] = useState(false);
-  const { isConnected, isLoading, sendMessage } = useGeminiAI();
+  const [showDebug, setShowDebug] = useState(false);
+  const { isConnected, isLoading, sendMessage, debugInfo } = useGeminiAI();
 
   const handleSendMessage = async () => {
     if (!currentMessage.trim()) return;
@@ -140,6 +162,15 @@ function App() {
     }
   };
 
+  const testAPI = async () => {
+    const testResponse = await sendMessage("Test connection - provide a brief productivity tip for HAY's marketing director");
+    setChatMessages([{
+      type: 'ai',
+      content: testResponse,
+      timestamp: new Date().toLocaleTimeString()
+    }]);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -156,9 +187,9 @@ function App() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm ${
+              <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm cursor-pointer ${
                 isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-              }`}>
+              }`} onClick={() => setShowDebug(!showDebug)}>
                 <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
                 <span>{isConnected ? 'Gemini AI Connected' : 'AI Offline'}</span>
               </div>
@@ -172,6 +203,15 @@ function App() {
               </span>
             </div>
           </div>
+          {showDebug && (
+            <div className="pb-4">
+              <div className="bg-gray-100 p-3 rounded text-sm">
+                <strong>Debug Info:</strong> {debugInfo}
+                <br />
+                <Button onClick={testAPI} className="mt-2 text-xs" variant="outline">Test API Connection</Button>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -319,7 +359,7 @@ function App() {
                             ? 'bg-blue-600 text-white' 
                             : 'bg-gray-100 text-gray-900'
                         }`}>
-                          <p className="text-sm">{msg.content}</p>
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                           <p className="text-xs opacity-75 mt-1">{msg.timestamp}</p>
                         </div>
                       </div>
