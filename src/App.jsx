@@ -55,12 +55,19 @@ const Textarea = ({ className = "", ...props }) => (
 );
 
 // Modal Component
-const Modal = ({ isOpen, onClose, title, children }) => {
+const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
   if (!isOpen) return null;
+
+  const sizeClasses = {
+    sm: "max-w-md",
+    md: "max-w-2xl",
+    lg: "max-w-4xl",
+    xl: "max-w-6xl"
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+      <div className={`bg-white rounded-lg p-6 w-full ${sizeClasses[size]} mx-4 max-h-[90vh] overflow-y-auto`}>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
           <button 
@@ -76,82 +83,293 @@ const Modal = ({ isOpen, onClose, title, children }) => {
   );
 };
 
-// Calendar Modal Component
-const CalendarModal = ({ isOpen, onClose }) => {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const currentDate = new Date();
-  const currentDay = currentDate.getDay();
-  
-  const weekEvents = [
-    { day: 'Monday', events: [
-      { time: '09:00 - 09:30', title: 'Team Standup', status: 'completed' },
-      { time: '14:00 - 15:00', title: 'JET Task List Session', status: 'current' },
-      { time: '15:00 - 16:00', title: 'August Campaign Brief', status: 'upcoming' },
-      { time: '16:30 - 17:30', title: 'Client Review Meeting', status: 'upcoming' }
-    ]},
-    { day: 'Tuesday', events: [
-      { time: '10:00 - 11:00', title: 'Marketing Strategy Review', status: 'upcoming' },
-      { time: '14:00 - 15:30', title: 'Sales Office Planning', status: 'upcoming' },
-      { time: '16:00 - 17:00', title: 'Community Outreach Call', status: 'upcoming' }
-    ]},
-    { day: 'Wednesday', events: [
-      { time: '09:30 - 10:30', title: 'August Campaign Launch', status: 'upcoming' },
-      { time: '11:00 - 12:00', title: 'Content Creation Session', status: 'upcoming' },
-      { time: '15:00 - 16:00', title: 'Stakeholder Update', status: 'upcoming' }
-    ]},
-    { day: 'Thursday', events: [
-      { time: '10:00 - 11:30', title: 'Customer Journey Workshop', status: 'upcoming' },
-      { time: '14:00 - 15:00', title: 'Performance Analytics Review', status: 'upcoming' }
-    ]},
-    { day: 'Friday', events: [
-      { time: '09:00 - 10:00', title: 'Week Wrap-up Meeting', status: 'upcoming' },
-      { time: '11:00 - 12:00', title: 'November Event Brainstorm', status: 'upcoming' }
-    ]},
-    { day: 'Saturday', events: [
-      { time: '10:00 - 12:00', title: 'Community Event (Optional)', status: 'upcoming' }
-    ]},
-    { day: 'Sunday', events: [
-      { time: 'All Day', title: 'Rest & Planning', status: 'upcoming' }
-    ]}
+// Google Calendar-style Calendar Component
+const GoogleCalendarView = ({ isOpen, onClose }) => {
+  const [currentView, setCurrentView] = useState('week'); // 'day', 'week', 'month'
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  // Sample events data
+  const events = [
+    { id: 1, title: 'Team Standup', start: '09:00', end: '09:30', date: '2025-07-12', color: 'bg-blue-500' },
+    { id: 2, title: 'JET Task List Session', start: '14:00', end: '15:00', date: '2025-07-12', color: 'bg-green-500' },
+    { id: 3, title: 'August Campaign Brief', start: '15:00', end: '16:00', date: '2025-07-12', color: 'bg-yellow-500' },
+    { id: 4, title: 'Client Review Meeting', start: '16:30', end: '17:30', date: '2025-07-12', color: 'bg-purple-500' },
+    { id: 5, title: 'Marketing Strategy Review', start: '10:00', end: '11:00', date: '2025-07-13', color: 'bg-red-500' },
+    { id: 6, title: 'Sales Office Planning', start: '14:00', end: '15:30', date: '2025-07-13', color: 'bg-indigo-500' },
+    { id: 7, title: 'Community Outreach Call', start: '16:00', end: '17:00', date: '2025-07-13', color: 'bg-pink-500' },
+    { id: 8, title: 'August Campaign Launch', start: '09:30', end: '10:30', date: '2025-07-14', color: 'bg-orange-500' },
+    { id: 9, title: 'Content Creation Session', start: '11:00', end: '12:00', date: '2025-07-14', color: 'bg-teal-500' },
+    { id: 10, title: 'Stakeholder Update', start: '15:00', end: '16:00', date: '2025-07-14', color: 'bg-cyan-500' }
   ];
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Weekly Calendar View">
-      <div className="space-y-4">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <p className="text-sm text-blue-800">
-            <strong>Productivity Tip:</strong> Use time-blocking to dedicate focused periods for deep work on your critical HAY projects.
-          </p>
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const formatMonth = (date) => {
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long'
+    });
+  };
+
+  const getWeekDates = (date) => {
+    const week = [];
+    const startOfWeek = new Date(date);
+    const day = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - day;
+    startOfWeek.setDate(diff);
+
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(startOfWeek);
+      day.setDate(startOfWeek.getDate() + i);
+      week.push(day);
+    }
+    return week;
+  };
+
+  const getMonthDates = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    const endDate = new Date(lastDay);
+    
+    // Adjust to start from Sunday
+    startDate.setDate(firstDay.getDate() - firstDay.getDay());
+    endDate.setDate(lastDay.getDate() + (6 - lastDay.getDay()));
+    
+    const dates = [];
+    const current = new Date(startDate);
+    
+    while (current <= endDate) {
+      dates.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
+    
+    return dates;
+  };
+
+  const navigateDate = (direction) => {
+    const newDate = new Date(currentDate);
+    if (currentView === 'day') {
+      newDate.setDate(currentDate.getDate() + direction);
+    } else if (currentView === 'week') {
+      newDate.setDate(currentDate.getDate() + (direction * 7));
+    } else if (currentView === 'month') {
+      newDate.setMonth(currentDate.getMonth() + direction);
+    }
+    setCurrentDate(newDate);
+  };
+
+  const getEventsForDate = (date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return events.filter(event => event.date === dateStr);
+  };
+
+  const timeSlots = Array.from({ length: 24 }, (_, i) => {
+    const hour = i.toString().padStart(2, '0');
+    return `${hour}:00`;
+  });
+
+  const renderDayView = () => (
+    <div className="flex flex-col h-96 overflow-y-auto">
+      <div className="sticky top-0 bg-white border-b p-2">
+        <h3 className="font-semibold text-lg">{formatDate(currentDate)}</h3>
+      </div>
+      <div className="flex-1">
+        {timeSlots.map((time, index) => {
+          const dayEvents = getEventsForDate(currentDate);
+          const timeEvents = dayEvents.filter(event => event.start.startsWith(time.split(':')[0]));
+          
+          return (
+            <div key={time} className="border-b border-gray-100 min-h-12 flex">
+              <div className="w-16 text-xs text-gray-500 p-2 border-r">{time}</div>
+              <div className="flex-1 p-1 relative">
+                {timeEvents.map(event => (
+                  <div key={event.id} className={`${event.color} text-white text-xs p-1 rounded mb-1 shadow`}>
+                    <div className="font-medium">{event.title}</div>
+                    <div className="opacity-90">{event.start} - {event.end}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const renderWeekView = () => {
+    const weekDates = getWeekDates(currentDate);
+    
+    return (
+      <div className="h-96 overflow-y-auto">
+        <div className="grid grid-cols-8 border-b sticky top-0 bg-white">
+          <div className="p-2 border-r text-xs text-gray-500">Time</div>
+          {weekDates.map((date, index) => (
+            <div key={index} className="p-2 border-r text-center">
+              <div className="text-xs text-gray-500">{date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+              <div className={`text-sm font-medium ${date.toDateString() === new Date().toDateString() ? 'text-blue-600' : ''}`}>
+                {date.getDate()}
+              </div>
+            </div>
+          ))}
         </div>
         
-        {weekEvents.map((dayData, index) => (
-          <div key={dayData.day} className="border rounded-lg p-3">
-            <h3 className={`font-semibold mb-2 ${index === currentDay ? 'text-blue-600' : 'text-gray-900'}`}>
-              {dayData.day} {index === currentDay && '(Today)'}
-            </h3>
-            <div className="space-y-2">
-              {dayData.events.map((event, eventIndex) => (
-                <div key={eventIndex} className={`flex items-center justify-between p-2 rounded ${
-                  event.status === 'completed' ? 'bg-gray-50' :
-                  event.status === 'current' ? 'bg-blue-50 border border-blue-200' :
-                  'bg-yellow-50'
-                }`}>
-                  <div>
-                    <p className="font-medium text-sm">{event.title}</p>
-                    <p className="text-xs text-gray-600">{event.time}</p>
-                  </div>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    event.status === 'completed' ? 'bg-gray-200 text-gray-700' :
-                    event.status === 'current' ? 'bg-blue-200 text-blue-700' :
-                    'bg-yellow-200 text-yellow-700'
-                  }`}>
-                    {event.status}
-                  </span>
+        {timeSlots.slice(8, 19).map((time, timeIndex) => (
+          <div key={time} className="grid grid-cols-8 border-b min-h-12">
+            <div className="p-2 border-r text-xs text-gray-500">{time}</div>
+            {weekDates.map((date, dateIndex) => {
+              const dayEvents = getEventsForDate(date);
+              const timeEvents = dayEvents.filter(event => event.start.startsWith(time.split(':')[0]));
+              
+              return (
+                <div key={dateIndex} className="border-r p-1 relative">
+                  {timeEvents.map(event => (
+                    <div key={event.id} className={`${event.color} text-white text-xs p-1 rounded mb-1 shadow`}>
+                      <div className="font-medium truncate">{event.title}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         ))}
+      </div>
+    );
+  };
+
+  const renderMonthView = () => {
+    const monthDates = getMonthDates(currentDate);
+    const weeks = [];
+    
+    for (let i = 0; i < monthDates.length; i += 7) {
+      weeks.push(monthDates.slice(i, i + 7));
+    }
+    
+    return (
+      <div className="h-96">
+        <div className="grid grid-cols-7 border-b bg-gray-50">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+            <div key={day} className="p-2 text-center text-sm font-medium text-gray-600 border-r">
+              {day}
+            </div>
+          ))}
+        </div>
+        
+        <div className="grid grid-rows-6 h-80">
+          {weeks.map((week, weekIndex) => (
+            <div key={weekIndex} className="grid grid-cols-7 border-b">
+              {week.map((date, dateIndex) => {
+                const dayEvents = getEventsForDate(date);
+                const isCurrentMonth = date.getMonth() === currentDate.getMonth();
+                const isToday = date.toDateString() === new Date().toDateString();
+                
+                return (
+                  <div key={dateIndex} className="border-r p-1 min-h-16 overflow-hidden">
+                    <div className={`text-sm ${isCurrentMonth ? 'text-gray-900' : 'text-gray-400'} ${isToday ? 'bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''}`}>
+                      {date.getDate()}
+                    </div>
+                    <div className="space-y-1 mt-1">
+                      {dayEvents.slice(0, 2).map(event => (
+                        <div key={event.id} className={`${event.color} text-white text-xs p-1 rounded truncate`}>
+                          {event.title}
+                        </div>
+                      ))}
+                      {dayEvents.length > 2 && (
+                        <div className="text-xs text-gray-500">+{dayEvents.length - 2} more</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="HAY Calendar" size="xl">
+      <div className="space-y-4">
+        {/* Calendar Header */}
+        <div className="flex items-center justify-between border-b pb-4">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" onClick={() => navigateDate(-1)} className="px-2 py-1">
+                ←
+              </Button>
+              <Button variant="outline" onClick={() => navigateDate(1)} className="px-2 py-1">
+                →
+              </Button>
+              <Button variant="outline" onClick={() => setCurrentDate(new Date())} className="text-sm">
+                Today
+              </Button>
+            </div>
+            
+            <h2 className="text-xl font-semibold">
+              {currentView === 'month' ? formatMonth(currentDate) : formatDate(currentDate)}
+            </h2>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Button 
+              variant={currentView === 'day' ? 'default' : 'outline'} 
+              onClick={() => setCurrentView('day')}
+              className="text-sm"
+            >
+              Day
+            </Button>
+            <Button 
+              variant={currentView === 'week' ? 'default' : 'outline'} 
+              onClick={() => setCurrentView('week')}
+              className="text-sm"
+            >
+              Week
+            </Button>
+            <Button 
+              variant={currentView === 'month' ? 'default' : 'outline'} 
+              onClick={() => setCurrentView('month')}
+              className="text-sm"
+            >
+              Month
+            </Button>
+          </div>
+        </div>
+
+        {/* Calendar Content */}
+        <div className="border rounded-lg">
+          {currentView === 'day' && renderDayView()}
+          {currentView === 'week' && renderWeekView()}
+          {currentView === 'month' && renderMonthView()}
+        </div>
+
+        {/* Google Calendar Integration Info */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="font-semibold text-blue-900 mb-2">🔗 Google Calendar Integration</h3>
+          <p className="text-sm text-blue-800 mb-3">
+            To connect your real Google Calendar events, you'll need to set up Google Calendar API credentials.
+          </p>
+          <div className="space-y-2 text-sm text-blue-700">
+            <p><strong>Step 1:</strong> Go to Google Cloud Console and create a new project</p>
+            <p><strong>Step 2:</strong> Enable the Google Calendar API</p>
+            <p><strong>Step 3:</strong> Create credentials (API key or OAuth 2.0)</p>
+            <p><strong>Step 4:</strong> Add the credentials to your environment variables</p>
+          </div>
+          <Button variant="outline" className="mt-3 text-sm">
+            <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">
+              Open Google Cloud Console
+            </a>
+          </Button>
+        </div>
       </div>
     </Modal>
   );
@@ -433,8 +651,6 @@ function App() {
     setTasks(prev => [...prev, newTask]);
     
     // Send AI feedback about the new task
-    const feedbackMessage = `I added a new task: "${taskData.title}" with ${taskData.priority} priority. Can you provide quick feedback on this task and how it fits with my HAY marketing priorities?`;
-    
     setChatMessages(prev => [...prev, {
       type: 'ai',
       content: `Great! I see you've added "${taskData.title}" as a ${taskData.priority} priority task. This aligns well with HAY's strategic objectives. I recommend time-blocking dedicated focus periods for this task and considering how it supports your "soft developer" brand positioning. Would you like me to help you break this down into smaller, actionable steps?`,
@@ -479,7 +695,7 @@ function App() {
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">Productivity Dashboard</h1>
-                <p className="text-sm text-gray-500">Enhanced with AI Coaching</p>
+                <p className="text-sm text-gray-500">Enhanced with AI Coaching & Google Calendar</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -547,7 +763,7 @@ function App() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Calendar Events</p>
-                <p className="text-3xl font-bold text-purple-600">4</p>
+                <p className="text-3xl font-bold text-purple-600">10</p>
               </div>
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -682,7 +898,7 @@ function App() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Today's Schedule</h2>
             <Button variant="outline" onClick={() => setShowCalendar(true)}>
-              View Full Calendar
+              📅 Open Google Calendar View
             </Button>
           </div>
           
@@ -727,7 +943,7 @@ function App() {
       </main>
 
       {/* Modals */}
-      <CalendarModal isOpen={showCalendar} onClose={() => setShowCalendar(false)} />
+      <GoogleCalendarView isOpen={showCalendar} onClose={() => setShowCalendar(false)} />
       <AddTaskModal 
         isOpen={showAddTask} 
         onClose={() => setShowAddTask(false)} 
