@@ -352,23 +352,23 @@ const GoogleCalendarView = ({ isOpen, onClose }) => {
           {currentView === 'month' && renderMonthView()}
         </div>
 
-        {/* Google Calendar Integration Info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="font-semibold text-blue-900 mb-2">🔗 Google Calendar Integration</h3>
-          <p className="text-sm text-blue-800 mb-3">
-            To connect your real Google Calendar events, you'll need to set up Google Calendar API credentials.
-          </p>
-          <div className="space-y-2 text-sm text-blue-700">
-            <p><strong>Step 1:</strong> Go to Google Cloud Console and create a new project</p>
-            <p><strong>Step 2:</strong> Enable the Google Calendar API</p>
-            <p><strong>Step 3:</strong> Create credentials (API key or OAuth 2.0)</p>
-            <p><strong>Step 4:</strong> Add the credentials to your environment variables</p>
+        {/* Calendar Features Info */}
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <h3 className="font-semibold text-green-900 mb-2">📅 Calendar Features</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-green-800">
+            <div>
+              <p><strong>Daily View:</strong> Hour-by-hour schedule with detailed time slots</p>
+            </div>
+            <div>
+              <p><strong>Weekly View:</strong> 7-day overview with business hours focus</p>
+            </div>
+            <div>
+              <p><strong>Monthly View:</strong> Traditional calendar grid with event overview</p>
+            </div>
           </div>
-          <Button variant="outline" className="mt-3 text-sm">
-            <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">
-              Open Google Cloud Console
-            </a>
-          </Button>
+          <div className="mt-3 text-sm text-green-700">
+            <p><strong>Navigation:</strong> Use arrow buttons to navigate dates, or click "Today" to return to current date. Switch between views using Day/Week/Month buttons.</p>
+          </div>
         </div>
       </div>
     </Modal>
