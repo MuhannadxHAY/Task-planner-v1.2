@@ -36,6 +36,235 @@ const Input = ({ className = "", ...props }) => (
   />
 );
 
+// Simple Select Component
+const Select = ({ children, className = "", ...props }) => (
+  <select 
+    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${className}`}
+    {...props}
+  >
+    {children}
+  </select>
+);
+
+// Simple Textarea Component
+const Textarea = ({ className = "", ...props }) => (
+  <textarea 
+    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${className}`}
+    {...props}
+  />
+);
+
+// Modal Component
+const Modal = ({ isOpen, onClose, title, children }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+          <button 
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// Calendar Modal Component
+const CalendarModal = ({ isOpen, onClose }) => {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const currentDate = new Date();
+  const currentDay = currentDate.getDay();
+  
+  const weekEvents = [
+    { day: 'Monday', events: [
+      { time: '09:00 - 09:30', title: 'Team Standup', status: 'completed' },
+      { time: '14:00 - 15:00', title: 'JET Task List Session', status: 'current' },
+      { time: '15:00 - 16:00', title: 'August Campaign Brief', status: 'upcoming' },
+      { time: '16:30 - 17:30', title: 'Client Review Meeting', status: 'upcoming' }
+    ]},
+    { day: 'Tuesday', events: [
+      { time: '10:00 - 11:00', title: 'Marketing Strategy Review', status: 'upcoming' },
+      { time: '14:00 - 15:30', title: 'Sales Office Planning', status: 'upcoming' },
+      { time: '16:00 - 17:00', title: 'Community Outreach Call', status: 'upcoming' }
+    ]},
+    { day: 'Wednesday', events: [
+      { time: '09:30 - 10:30', title: 'August Campaign Launch', status: 'upcoming' },
+      { time: '11:00 - 12:00', title: 'Content Creation Session', status: 'upcoming' },
+      { time: '15:00 - 16:00', title: 'Stakeholder Update', status: 'upcoming' }
+    ]},
+    { day: 'Thursday', events: [
+      { time: '10:00 - 11:30', title: 'Customer Journey Workshop', status: 'upcoming' },
+      { time: '14:00 - 15:00', title: 'Performance Analytics Review', status: 'upcoming' }
+    ]},
+    { day: 'Friday', events: [
+      { time: '09:00 - 10:00', title: 'Week Wrap-up Meeting', status: 'upcoming' },
+      { time: '11:00 - 12:00', title: 'November Event Brainstorm', status: 'upcoming' }
+    ]},
+    { day: 'Saturday', events: [
+      { time: '10:00 - 12:00', title: 'Community Event (Optional)', status: 'upcoming' }
+    ]},
+    { day: 'Sunday', events: [
+      { time: 'All Day', title: 'Rest & Planning', status: 'upcoming' }
+    ]}
+  ];
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Weekly Calendar View">
+      <div className="space-y-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-sm text-blue-800">
+            <strong>Productivity Tip:</strong> Use time-blocking to dedicate focused periods for deep work on your critical HAY projects.
+          </p>
+        </div>
+        
+        {weekEvents.map((dayData, index) => (
+          <div key={dayData.day} className="border rounded-lg p-3">
+            <h3 className={`font-semibold mb-2 ${index === currentDay ? 'text-blue-600' : 'text-gray-900'}`}>
+              {dayData.day} {index === currentDay && '(Today)'}
+            </h3>
+            <div className="space-y-2">
+              {dayData.events.map((event, eventIndex) => (
+                <div key={eventIndex} className={`flex items-center justify-between p-2 rounded ${
+                  event.status === 'completed' ? 'bg-gray-50' :
+                  event.status === 'current' ? 'bg-blue-50 border border-blue-200' :
+                  'bg-yellow-50'
+                }`}>
+                  <div>
+                    <p className="font-medium text-sm">{event.title}</p>
+                    <p className="text-xs text-gray-600">{event.time}</p>
+                  </div>
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    event.status === 'completed' ? 'bg-gray-200 text-gray-700' :
+                    event.status === 'current' ? 'bg-blue-200 text-blue-700' :
+                    'bg-yellow-200 text-yellow-700'
+                  }`}>
+                    {event.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Modal>
+  );
+};
+
+// Add Task Modal Component
+const AddTaskModal = ({ isOpen, onClose, onAddTask }) => {
+  const [taskData, setTaskData] = useState({
+    title: '',
+    description: '',
+    priority: 'important',
+    deadline: '',
+    estimatedHours: ''
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (taskData.title.trim()) {
+      onAddTask(taskData);
+      setTaskData({
+        title: '',
+        description: '',
+        priority: 'important',
+        deadline: '',
+        estimatedHours: ''
+      });
+      onClose();
+    }
+  };
+
+  const handleChange = (field, value) => {
+    setTaskData(prev => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Add New Priority Task">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Task Title *
+          </label>
+          <Input
+            value={taskData.title}
+            onChange={(e) => handleChange('title', e.target.value)}
+            placeholder="e.g., Finalize August campaign assets"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Description
+          </label>
+          <Textarea
+            value={taskData.description}
+            onChange={(e) => handleChange('description', e.target.value)}
+            placeholder="Describe the task details and objectives..."
+            rows={3}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Priority Level
+          </label>
+          <Select
+            value={taskData.priority}
+            onChange={(e) => handleChange('priority', e.target.value)}
+          >
+            <option value="critical">Critical</option>
+            <option value="important">Important</option>
+            <option value="normal">Normal</option>
+          </Select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Deadline
+          </label>
+          <Input
+            type="date"
+            value={taskData.deadline}
+            onChange={(e) => handleChange('deadline', e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Estimated Hours
+          </label>
+          <Input
+            type="number"
+            value={taskData.estimatedHours}
+            onChange={(e) => handleChange('estimatedHours', e.target.value)}
+            placeholder="e.g., 8"
+            min="1"
+            max="100"
+          />
+        </div>
+
+        <div className="flex space-x-3 pt-4">
+          <Button type="submit" className="flex-1">
+            Add Task
+          </Button>
+          <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
 // Fixed Gemini AI Integration with correct model name
 const useGeminiAI = () => {
   const [isConnected, setIsConnected] = useState(false);
@@ -129,6 +358,35 @@ function App() {
   const [currentMessage, setCurrentMessage] = useState('');
   const [showChat, setShowChat] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [tasks, setTasks] = useState([
+    {
+      id: 1,
+      title: "Sales office customer journey",
+      description: "Design and map the complete customer journey for the sales office experience",
+      priority: "critical",
+      deadline: "2 weeks",
+      estimatedHours: "8h"
+    },
+    {
+      id: 2,
+      title: "August digital campaign",
+      description: "Launch comprehensive digital marketing campaign for August neighborhood showcase",
+      priority: "critical",
+      deadline: "Aug 1-2",
+      estimatedHours: "12h"
+    },
+    {
+      id: 3,
+      title: "November event planning",
+      description: "Plan and coordinate the November community engagement event",
+      priority: "important",
+      deadline: "Oct 15",
+      estimatedHours: "15h"
+    }
+  ]);
+
   const { isConnected, isLoading, sendMessage, debugInfo } = useGeminiAI();
 
   const handleSendMessage = async () => {
@@ -162,6 +420,28 @@ function App() {
     }
   };
 
+  const handleAddTask = (taskData) => {
+    const newTask = {
+      id: tasks.length + 1,
+      title: taskData.title,
+      description: taskData.description,
+      priority: taskData.priority,
+      deadline: taskData.deadline || 'TBD',
+      estimatedHours: taskData.estimatedHours ? `${taskData.estimatedHours}h` : 'TBD'
+    };
+    
+    setTasks(prev => [...prev, newTask]);
+    
+    // Send AI feedback about the new task
+    const feedbackMessage = `I added a new task: "${taskData.title}" with ${taskData.priority} priority. Can you provide quick feedback on this task and how it fits with my HAY marketing priorities?`;
+    
+    setChatMessages(prev => [...prev, {
+      type: 'ai',
+      content: `Great! I see you've added "${taskData.title}" as a ${taskData.priority} priority task. This aligns well with HAY's strategic objectives. I recommend time-blocking dedicated focus periods for this task and considering how it supports your "soft developer" brand positioning. Would you like me to help you break this down into smaller, actionable steps?`,
+      timestamp: new Date().toLocaleTimeString()
+    }]);
+  };
+
   const testAPI = async () => {
     const testResponse = await sendMessage("Test connection - provide a brief productivity tip for HAY's marketing director");
     setChatMessages([{
@@ -169,6 +449,22 @@ function App() {
       content: testResponse,
       timestamp: new Date().toLocaleTimeString()
     }]);
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'critical': return 'border-red-500';
+      case 'important': return 'border-yellow-500';
+      default: return 'border-blue-500';
+    }
+  };
+
+  const getPriorityBadgeColor = (priority) => {
+    switch (priority) {
+      case 'critical': return 'bg-red-100 text-red-800';
+      case 'important': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-blue-100 text-blue-800';
+    }
   };
 
   return (
@@ -223,7 +519,7 @@ function App() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Active Tasks</p>
-                <p className="text-3xl font-bold text-gray-900">5</p>
+                <p className="text-3xl font-bold text-gray-900">{tasks.length}</p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -237,7 +533,7 @@ function App() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Critical Items</p>
-                <p className="text-3xl font-bold text-red-600">2</p>
+                <p className="text-3xl font-bold text-red-600">{tasks.filter(t => t.priority === 'critical').length}</p>
               </div>
               <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -281,39 +577,25 @@ function App() {
           <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Priority Tasks</h2>
-              <Button variant="outline" className="text-sm">Add Task</Button>
+              <Button variant="outline" className="text-sm" onClick={() => setShowAddTask(true)}>
+                Add Task
+              </Button>
             </div>
             
             <div className="space-y-4">
-              <div className="border-l-4 border-red-500 pl-4 py-2">
-                <h3 className="font-medium text-gray-900">Sales office customer journey</h3>
-                <p className="text-sm text-gray-600 mt-1">Design and map the complete customer journey for the sales office experience</p>
-                <div className="flex items-center space-x-4 mt-2">
-                  <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">critical</span>
-                  <span className="text-xs text-gray-500">2 weeks</span>
-                  <span className="text-xs text-gray-500">8h</span>
+              {tasks.map((task) => (
+                <div key={task.id} className={`border-l-4 ${getPriorityColor(task.priority)} pl-4 py-2`}>
+                  <h3 className="font-medium text-gray-900">{task.title}</h3>
+                  <p className="text-sm text-gray-600 mt-1">{task.description}</p>
+                  <div className="flex items-center space-x-4 mt-2">
+                    <span className={`px-2 py-1 text-xs rounded-full ${getPriorityBadgeColor(task.priority)}`}>
+                      {task.priority}
+                    </span>
+                    <span className="text-xs text-gray-500">{task.deadline}</span>
+                    <span className="text-xs text-gray-500">{task.estimatedHours}</span>
+                  </div>
                 </div>
-              </div>
-
-              <div className="border-l-4 border-red-500 pl-4 py-2">
-                <h3 className="font-medium text-gray-900">August digital campaign</h3>
-                <p className="text-sm text-gray-600 mt-1">Launch comprehensive digital marketing campaign for August neighborhood showcase</p>
-                <div className="flex items-center space-x-4 mt-2">
-                  <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">critical</span>
-                  <span className="text-xs text-gray-500">Aug 1-2</span>
-                  <span className="text-xs text-gray-500">12h</span>
-                </div>
-              </div>
-
-              <div className="border-l-4 border-yellow-500 pl-4 py-2">
-                <h3 className="font-medium text-gray-900">November event planning</h3>
-                <p className="text-sm text-gray-600 mt-1">Plan and coordinate the November community engagement event</p>
-                <div className="flex items-center space-x-4 mt-2">
-                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">important</span>
-                  <span className="text-xs text-gray-500">Oct 15</span>
-                  <span className="text-xs text-gray-500">15h</span>
-                </div>
-              </div>
+              ))}
             </div>
           </Card>
 
@@ -333,7 +615,7 @@ function App() {
               <div className="space-y-3">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm text-blue-800">
-                    <strong>Focus Reminder:</strong> You have 2 critical deadlines this week. Consider time-blocking your calendar for deep work sessions.
+                    <strong>Focus Reminder:</strong> You have {tasks.filter(t => t.priority === 'critical').length} critical deadlines this week. Consider time-blocking your calendar for deep work sessions.
                   </p>
                 </div>
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -399,7 +681,9 @@ function App() {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Today's Schedule</h2>
-            <Button variant="outline">View Full Calendar</Button>
+            <Button variant="outline" onClick={() => setShowCalendar(true)}>
+              View Full Calendar
+            </Button>
           </div>
           
           <div className="space-y-3">
@@ -441,6 +725,14 @@ function App() {
           </div>
         </Card>
       </main>
+
+      {/* Modals */}
+      <CalendarModal isOpen={showCalendar} onClose={() => setShowCalendar(false)} />
+      <AddTaskModal 
+        isOpen={showAddTask} 
+        onClose={() => setShowAddTask(false)} 
+        onAddTask={handleAddTask}
+      />
     </div>
   );
 }
